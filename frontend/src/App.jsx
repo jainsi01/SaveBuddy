@@ -8,6 +8,8 @@ import HealthCheckPage from './pages/HealthCheckPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import GoalsPage from './pages/goals/GoalsPage';
+import GoalDetailsPage from './pages/goals/GoalDetailsPage';
 
 export default function App() {
   const [systemStatus, setSystemStatus] = useState({
@@ -32,6 +34,24 @@ export default function App() {
               {/* Module 2: Authentication Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+
+              {/* Module 3: Core Savings Goals Routes */}
+              <Route
+                path="/goals"
+                element={
+                  <ProtectedRoute>
+                    <GoalsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/goals/:id"
+                element={
+                  <ProtectedRoute>
+                    <GoalDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Protected User Profile Route */}
               <Route

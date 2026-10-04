@@ -44,6 +44,12 @@ export default function Header({ systemStatus }) {
             {isAuthenticated ? (
               <>
                 <Link
+                  to="/goals"
+                  className="px-3 py-1.5 rounded-lg hover:bg-coffee-200/50 hover:text-coffee-950 transition"
+                >
+                  Goals
+                </Link>
+                <Link
                   to="/profile"
                   className="px-3 py-1.5 rounded-lg hover:bg-coffee-200/50 hover:text-coffee-950 transition flex items-center gap-1.5"
                 >

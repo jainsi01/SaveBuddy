@@ -18,6 +18,7 @@ const errorHandler = require('./middleware/errorHandler');
 const AppError = require('./utils/AppError');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
+const goalRoutes = require('./routes/goalRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -82,6 +83,7 @@ if (process.env.NODE_ENV !== 'test') {
 // 10. Mount API Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/goals', goalRoutes);
 
 // Root route
 app.get('/', (req, res) => {
