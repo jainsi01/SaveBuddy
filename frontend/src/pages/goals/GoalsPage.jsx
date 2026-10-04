@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import GoalCard from '../../components/goals/GoalCard';
 import GoalFormModal from '../../components/goals/GoalFormModal';
+import AddContributionModal from '../../components/contributions/AddContributionModal';
 
 export default function GoalsPage() {
   const { user } = useAuth();
@@ -16,6 +17,10 @@ export default function GoalsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [selectedGoalForDeposit, setSelectedGoalForDeposit] = useState(null);
+
+  const currency = user?.currencyPreference || 'INR';
 
   const fetchGoals = useCallback(async () => {
     setLoading(true);
@@ -52,6 +57,22 @@ export default function GoalsPage() {
     } catch (err) {
       return { error: err.message || 'Failed to create goal.' };
     }
+  };
+
+  const handleDepositSubmit = async (contributionPayload) => {
+    if (!selectedGoalForDeposit) return;
+    try {
+      await api.post(`/goals/${selectedGoalForDeposit.id}/contributions`, contributionPayload);
+      fetchGoals();
+      return { success: true };
+    } catch (err) {
+      return { error: err.message || 'Failed to record deposit.' };
+    }
+  };
+
+  const handleOpenAddMoney = (goal) => {
+    setSelectedGoalForDeposit(goal);
+    setIsDepositModalOpen(true);
   };
 
   // Filter goals by search query on title/description
@@ -192,7 +213,12 @@ export default function GoalsPage() {
         /* Grid of Goals */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredGoals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} currency={user?.currencyPreference || 'INR'} />
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              currency={currency}
+              onAddMoney={handleOpenAddMoney}
+            />
           ))}
         </div>
       )}
@@ -203,6 +229,20 @@ export default function GoalsPage() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateGoal}
       />
+
+      {/* Quick Deposit Modal */}
+      {selectedGoalForDeposit && (
+        <AddContributionModal
+          isOpen={isDepositModalOpen}
+          onClose={() => {
+            setIsDepositModalOpen(false);
+            setSelectedGoalForDeposit(null);
+          }}
+          goal={selectedGoalForDeposit}
+          onSubmit={handleDepositSubmit}
+          currency={currency}
+        />
+      )}
     </div>
   );
 }

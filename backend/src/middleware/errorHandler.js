@@ -45,6 +45,13 @@ const errorHandler = (err, req, res, next) => {
       .join(', ');
   }
 
+  // EC-8.6: MongoDB Failover or Network Connection Error
+  if (err.name === 'MongoNetworkError' || err.name === 'MongoServerSelectionError') {
+    statusCode = 503;
+    errorCode = 'DATABASE_UNAVAILABLE';
+    message = 'Database temporarily unavailable. Please retry shortly.';
+  }
+
   // In development, log the full error for debugging
   if (process.env.NODE_ENV === 'development') {
     console.error(`[Error] ${errorCode} (${statusCode}):`, err);

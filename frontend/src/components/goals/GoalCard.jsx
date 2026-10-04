@@ -1,6 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Plane, Laptop, GraduationCap, Car, Home, Heart, Target, Calendar, Clock, CheckCircle } from 'lucide-react';
+import {
+  Shield,
+  Plane,
+  Laptop,
+  GraduationCap,
+  Car,
+  Home,
+  Heart,
+  Target,
+  Calendar,
+  Clock,
+  CheckCircle,
+  Plus,
+  ArrowRight,
+} from 'lucide-react';
 import ProgressBar from './ProgressBar';
 
 const CATEGORY_META = {
@@ -14,7 +28,7 @@ const CATEGORY_META = {
   other: { icon: Target, label: 'General Savings', bg: 'bg-coffee-100 text-coffee-700' },
 };
 
-export default function GoalCard({ goal, currency = 'INR' }) {
+export default function GoalCard({ goal, currency = 'INR', onAddMoney }) {
   const categoryInfo = CATEGORY_META[goal.category] || CATEGORY_META.other;
   const CategoryIcon = categoryInfo.icon;
 
@@ -29,17 +43,20 @@ export default function GoalCard({ goal, currency = 'INR' }) {
     }).format(val || 0);
   };
 
-  const deadlineFormatted = new Date(goal.deadline).toLocaleDateString('en-US', {
+  const deadlineFormatted = new Date(goal.deadline).toLocaleDateString('en-IN', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 
+  // Calculate monthly pacing
+  const daysLeft = goal.daysRemaining || 30;
+  const monthsLeft = Math.max(1, Math.ceil(daysLeft / 30));
+  const remainingAmt = Math.max(0, goal.targetAmount - goal.currentAmount);
+  const monthlyPace = Math.ceil(remainingAmt / monthsLeft);
+
   return (
-    <Link
-      to={`/goals/${goal.id}`}
-      className="bg-white rounded-3xl p-6 border border-coffee-200/80 shadow-warm-sm hover:shadow-warm-md hover:border-coffee-400/80 transition-all flex flex-col justify-between group block"
-    >
+    <div className="bg-white rounded-3xl p-6 border border-coffee-200/80 shadow-warm-sm hover:shadow-warm-md hover:border-coffee-300 transition-all flex flex-col justify-between group">
       <div>
         {/* Top Header: Category Badge + Status */}
         <div className="flex items-center justify-between gap-2 mb-4">
@@ -53,7 +70,7 @@ export default function GoalCard({ goal, currency = 'INR' }) {
           </div>
 
           {isCompleted ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sage-700 bg-sage-100 px-2.5 py-0.5 rounded-full border border-sage-500/20">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
               <CheckCircle className="w-3 h-3" />
               <span>Completed</span>
             </span>
@@ -66,21 +83,23 @@ export default function GoalCard({ goal, currency = 'INR' }) {
               {goal.daysRemaining <= 0 ? 'Due Today' : `${goal.daysRemaining}d left`}
             </span>
           ) : (
-            <span className="text-[11px] font-medium text-coffee-600 bg-coffee-50 px-2.5 py-0.5 rounded-full border border-coffee-200/60">
-              {goal.daysRemaining} days left
+            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              On Track
             </span>
           )}
         </div>
 
         {/* Goal Title & Description */}
-        <h3 className="font-serif text-lg font-medium text-coffee-950 group-hover:text-coffee-600 transition line-clamp-1">
-          {goal.title}
-        </h3>
-        {goal.description && (
-          <p className="text-xs text-coffee-600 mt-1 line-clamp-2 leading-relaxed">
-            {goal.description}
-          </p>
-        )}
+        <Link to={`/goals/${goal.id}`} className="block group-hover:text-coffee-600 transition">
+          <h3 className="font-serif text-lg font-medium text-coffee-950 line-clamp-1">
+            {goal.title}
+          </h3>
+          {goal.description && (
+            <p className="text-xs text-coffee-600 mt-1 line-clamp-2 leading-relaxed">
+              {goal.description}
+            </p>
+          )}
+        </Link>
       </div>
 
       {/* Progress & Balances */}
@@ -105,12 +124,39 @@ export default function GoalCard({ goal, currency = 'INR' }) {
           <span className="font-semibold text-coffee-700">
             {goal.progressPercentage}% reached
           </span>
-          <div className="flex items-center gap-1 text-coffee-600">
-            <Calendar className="w-3 h-3 text-coffee-400" />
-            <span>{deadlineFormatted}</span>
-          </div>
+          {!isCompleted && !isArchived && (
+            <span className="font-medium text-coffee-600 bg-cream-100/70 px-2 py-0.5 rounded-md">
+              Save ~{formatCurrency(monthlyPace)}/mo
+            </span>
+          )}
+        </div>
+
+        {/* Action Buttons: Add Money or View Details */}
+        <div className="pt-3 border-t border-coffee-100 flex items-center justify-between text-xs font-semibold">
+          {!isCompleted && !isArchived && onAddMoney ? (
+            <button
+              onClick={() => onAddMoney(goal)}
+              className="text-coffee-700 hover:text-coffee-950 inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-cream-100 transition"
+            >
+              <Plus className="w-3.5 h-3.5 text-coffee-600" />
+              <span>Add Money</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 text-[11px] text-coffee-500">
+              <Calendar className="w-3 h-3 text-coffee-400" />
+              <span>Due {deadlineFormatted}</span>
+            </div>
+          )}
+
+          <Link
+            to={`/goals/${goal.id}`}
+            className="text-coffee-600 hover:text-coffee-950 inline-flex items-center gap-1 py-1 px-2.5 rounded-lg hover:bg-cream-100 transition"
+          >
+            <span>View Details</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

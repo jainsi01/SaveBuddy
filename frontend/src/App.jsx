@@ -4,12 +4,18 @@ import { AuthProvider } from './context/AuthContext';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
-import HealthCheckPage from './pages/HealthCheckPage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ProfilePage from './pages/ProfilePage';
+import LandingPage from './pages/LandingPage';
+import DashboardPage from './pages/DashboardPage';
+import TransactionsPage from './pages/TransactionsPage';
 import GoalsPage from './pages/goals/GoalsPage';
 import GoalDetailsPage from './pages/goals/GoalDetailsPage';
+import GroupGoalsPage from './pages/groups/GroupGoalsPage';
+import GroupGoalDetailsPage from './pages/groups/GroupGoalDetailsPage';
+import AIPlannerPage from './pages/AIPlannerPage';
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import HealthCheckPage from './pages/HealthCheckPage';
 
 export default function App() {
   const [systemStatus, setSystemStatus] = useState({
@@ -20,22 +26,39 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen flex flex-col bg-[#F7F3EE] text-[#241813]">
-          <Header systemStatus={systemStatus} />
+        <div className="min-h-screen flex flex-col bg-[#FBF9F6] text-[#241813] font-sans antialiased selection:bg-coffee-200 selection:text-coffee-950">
+          <Header />
 
-          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
             <Routes>
-              {/* Foundation System Health */}
-              <Route
-                path="/"
-                element={<HealthCheckPage onStatusUpdate={setSystemStatus} />}
-              />
+              {/* Consumer Landing Page */}
+              <Route path="/" element={<LandingPage />} />
 
-              {/* Module 2: Authentication Routes */}
+              {/* Authentication Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 
-              {/* Module 3: Core Savings Goals Routes */}
+              {/* Primary Consumer Dashboard */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Unified Cash Flow & Transactions Ledger */}
+              <Route
+                path="/transactions"
+                element={
+                  <ProtectedRoute>
+                    <TransactionsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Savings Goals Routes */}
               <Route
                 path="/goals"
                 element={
@@ -53,7 +76,35 @@ export default function App() {
                 }
               />
 
-              {/* Protected User Profile Route */}
+              {/* Collaborative Group Goals Routes */}
+              <Route
+                path="/group-goals"
+                element={
+                  <ProtectedRoute>
+                    <GroupGoalsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/group-goals/:id"
+                element={
+                  <ProtectedRoute>
+                    <GroupGoalDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dedicated Gemini AI Savings Planner */}
+              <Route
+                path="/ai-planner"
+                element={
+                  <ProtectedRoute>
+                    <AIPlannerPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* User Financial Profile & Settings */}
               <Route
                 path="/profile"
                 element={
@@ -61,6 +112,12 @@ export default function App() {
                     <ProfilePage />
                   </ProtectedRoute>
                 }
+              />
+
+              {/* Developer & Internal Diagnostics Route (Isolated) */}
+              <Route
+                path="/dev/system-health"
+                element={<HealthCheckPage onStatusUpdate={setSystemStatus} />}
               />
 
               {/* Catch-all Redirect */}

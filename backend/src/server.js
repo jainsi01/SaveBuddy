@@ -16,9 +16,13 @@ validateEnv();
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const AppError = require('./utils/AppError');
+const { sanitizeMiddleware } = require('./middleware/sanitizeMiddleware');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const goalRoutes = require('./routes/goalRoutes');
+const groupGoalRoutes = require('./routes/groupGoalRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,8 +30,21 @@ const PORT = process.env.PORT || 5000;
 // 4. Initialize Database Connection (EC-1.2)
 connectDB();
 
-// 5. Global Security Headers
-app.use(helmet());
+// 5. Global Security Headers & Content Security Policy (EC-8.2)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 // 6. Dynamic CORS Configuration (EC-1.5)
 const allowedOrigins = [
@@ -53,9 +70,10 @@ app.use(
   })
 );
 
-// 7. Request Body Parsers with Size Limit (EC-1.4: max 1MB)
+// 7. Request Body Parsers with Size Limit (EC-1.4: max 1MB) & NoSQL Sanitization (EC-8.1)
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ limit: '1mb', extended: true }));
+app.use(sanitizeMiddleware);
 
 // 8. HTTP Request Logger
 if (process.env.NODE_ENV !== 'test') {
@@ -84,6 +102,9 @@ if (process.env.NODE_ENV !== 'test') {
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api/group-goals', groupGoalRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Root route
 app.get('/', (req, res) => {

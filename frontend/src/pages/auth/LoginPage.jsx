@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import Logo from '../../components/common/Logo';
 
 export default function LoginPage() {
   const { login, authError, clearError } = useAuth();
@@ -16,7 +17,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const destination = location.state?.from?.pathname || '/profile';
+  const destination = location.state?.from?.pathname || '/dashboard';
 
   const handleChange = (e) => {
     clearError();
@@ -53,9 +54,9 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto py-12 px-4">
       <div className="bg-white rounded-3xl p-8 border border-coffee-200/80 shadow-warm-md space-y-6">
         {/* Header */}
-        <div className="text-center space-y-1">
-          <div className="w-12 h-12 mx-auto rounded-full bg-coffee-900 border border-coffee-500/40 flex items-center justify-center text-coffee-100 font-serif font-bold text-xl mb-3 shadow-warm-sm">
-            SB
+        <div className="text-center space-y-2">
+          <div className="flex justify-center mb-2">
+            <Logo size="lg" />
           </div>
           <h2 className="font-serif text-2xl font-medium text-coffee-950">Welcome Back</h2>
           <p className="text-xs text-coffee-600">Enter your credentials to access your savings dashboard.</p>

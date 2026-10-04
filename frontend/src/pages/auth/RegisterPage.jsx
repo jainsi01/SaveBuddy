@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Lock, Mail, User, Coins, Loader2, AlertCircle } from 'lucide-react';
+import Logo from '../../components/common/Logo';
 
 export default function RegisterPage() {
   const { register, authError, clearError } = useAuth();
@@ -62,7 +63,7 @@ export default function RegisterPage() {
     setSubmitting(false);
 
     if (result.success) {
-      navigate('/profile', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
   };
 
@@ -70,9 +71,9 @@ export default function RegisterPage() {
     <div className="max-w-md mx-auto py-12 px-4">
       <div className="bg-white rounded-3xl p-8 border border-coffee-200/80 shadow-warm-md space-y-6">
         {/* Header */}
-        <div className="text-center space-y-1">
-          <div className="w-12 h-12 mx-auto rounded-full bg-coffee-900 border border-coffee-500/40 flex items-center justify-center text-coffee-100 font-serif font-bold text-xl mb-3 shadow-warm-sm">
-            SB
+        <div className="text-center space-y-2">
+          <div className="flex justify-center mb-2">
+            <Logo size="lg" />
           </div>
           <h2 className="font-serif text-2xl font-medium text-coffee-950">Create Your Account</h2>
           <p className="text-xs text-coffee-600">Start planning and achieving your savings goals today.</p>
