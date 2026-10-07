@@ -25,13 +25,14 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
+
+// Trust Vercel's reverse proxy
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 5000;
 
 // 4. Initialize Database Connection (EC-1.2)
-connectDB().catch((error) => {
-  console.error('[Database] Initial connection failed:', error.message);
-});
-
+connectDB();
 // 5. Global Security Headers & Content Security Policy (EC-8.2)
 app.use(
   helmet({
