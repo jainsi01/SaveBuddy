@@ -1,9 +1,9 @@
 /**
- * Environment Variables Validator (EC-1.1)
- * Ensures all required environment variables are defined before starting the application.
+ * Environment Variables Validator
+ * Ensures required environment variables are defined.
  */
 function validateEnv() {
-  const requiredEnvVars = ['PORT', 'MONGO_URI', 'JWT_SECRET'];
+  const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET'];
   const missingVars = [];
 
   for (const varName of requiredEnvVars) {
@@ -13,12 +13,9 @@ function validateEnv() {
   }
 
   if (missingVars.length > 0) {
-    console.error('====================================================');
-    console.error('FATAL ERROR: Missing required environment variables:');
-    missingVars.forEach((v) => console.error(` - ${v}`));
-    console.error('Please verify your .env file before launching the server.');
-    console.error('====================================================');
-    process.exit(1);
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(', ')}`
+    );
   }
 }
 

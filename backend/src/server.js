@@ -28,7 +28,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 4. Initialize Database Connection (EC-1.2)
-connectDB();
+connectDB().catch((error) => {
+  console.error('[Database] Initial connection failed:', error.message);
+});
 
 // 5. Global Security Headers & Content Security Policy (EC-8.2)
 app.use(
@@ -47,13 +49,22 @@ app.use(
 );
 
 // 6. Dynamic CORS Configuration (EC-1.5)
+// const allowedOrigins = [
+//   process.env.CLIENT_URL || 'http://localhost:5173',
+//   'http://localhost:5174',
+//   'http://localhost:3000',
+//   'http://127.0.0.1:5173',
+//   'http://127.0.0.1:5174',
+// ];
+
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
-];
+].filter(Boolean);
 
 app.use(
   cors({

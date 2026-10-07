@@ -1,59 +1,75 @@
 const mongoose = require('mongoose');
-const dns = require('dns');
-
-// Use Google DNS to resolve MongoDB Atlas SRV records
-dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 /**
- * MongoDB Database Connection Manager (EC-1.2)
- * Handles connection initialization, lifecycle events, and automatic reconnection.
+ * MongoDB connection manager
+ *
+ * Mongoose reuses an existing connection when the Vercel
+ * function/container is warm, which avoids opening a new
+ * database connection for every request.
  */
-let isConnecting = false;
+
+let connectionPromise = null;
 
 const connectDB = async () => {
-  const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/savebuddy';
-
-  if (isConnecting || mongoose.connection.readyState === 1) {
-    return;
+  // Already connected
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
   }
 
-  isConnecting = true;
+  // Connection is already being established
+  if (connectionPromise) {
+    return connectionPromise;
+  }
 
-  try {
-    const conn = await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 3000, // Timeout quickly instead of hanging
+  const mongoURI = process.env.MONGO_URI;
+
+  if (!mongoURI) {
+    throw new Error('MONGO_URI environment variable is not defined.');
+  }
+
+  connectionPromise = mongoose
+    .connect(mongoURI, {
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+    })
+    .then((mongooseInstance) => {
+      console.log(
+        `[Database] MongoDB Connected: ${mongooseInstance.connection.host}`
+      );
+
+      return mongooseInstance.connection;
+    })
+    .catch((error) => {
+      connectionPromise = null;
+
+      console.error(
+        `[Database Error] Connection failed: ${error.message}`
+      );
+
+      throw error;
     });
 
-    console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
-    isConnecting = false;
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'test') {
-      console.error(`[Database Error] Connection failed: ${error.message}`);
-    }
-    isConnecting = false;
-  }
+  return connectionPromise;
 };
 
-// Monitor Connection Lifecycle Events
+// Monitor connection lifecycle
 mongoose.connection.on('connected', () => {
   if (process.env.NODE_ENV !== 'test') {
-    console.log('[Database Event] Mongoose connected to MongoDB cluster.');
+    console.log('[Database Event] Mongoose connected to MongoDB.');
   }
 });
 
-mongoose.connection.on('error', (err) => {
+mongoose.connection.on('error', (error) => {
   if (process.env.NODE_ENV !== 'test') {
-    console.error(`[Database Event] Mongoose connection error: ${err.message}`);
+    console.error(
+      `[Database Event] Mongoose connection error: ${error.message}`
+    );
   }
 });
 
 mongoose.connection.on('disconnected', () => {
   if (process.env.NODE_ENV !== 'test') {
-    console.warn('[Database Event] Mongoose disconnected from MongoDB. Attempting reconnection...');
-    setTimeout(() => {
-      connectDB();
-    }, 5000);
+    console.warn('[Database Event] MongoDB disconnected.');
   }
 });
 
