@@ -4,15 +4,22 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
+const dns = require('dns');
 
-// 1. Load Environment Configuration
 dotenv.config();
 
-// 2. Validate Environment Variables
+/**
+ * MongoDB Atlas uses mongodb+srv:// which requires DNS SRV lookups.
+ * The local Node.js environment is currently using 127.0.0.1
+ * as its DNS resolver, which is refusing the SRV query.
+ *
+ * Use reliable public DNS servers for MongoDB Atlas SRV resolution.
+ */
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const validateEnv = require('./config/validateEnv');
 validateEnv();
 
-// 3. Import Database & Middleware
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const AppError = require('./utils/AppError');
@@ -27,14 +34,16 @@ const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
-// Trust Vercel's reverse proxy
 app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 5000;
 
-// 4. Initialize Database Connection
-// Vercel may invoke the function before MongoDB connection is ready.
-// Catch the error so it does not become an unhandled rejection.
+/**
+ * Connect to MongoDB.
+ *
+ * The connection is also handled by the health endpoint when needed,
+ * which is useful for serverless environments such as Vercel.
+ */
 connectDB().catch((error) => {
   console.error(
     '[Database] Initial connection failed:',
@@ -42,7 +51,10 @@ connectDB().catch((error) => {
   );
 });
 
-// 5. Global Security Headers & Content Security Policy
+/* =========================
+   SECURITY
+========================= */
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -58,7 +70,10 @@ app.use(
   })
 );
 
-// 6. Dynamic CORS Configuration
+/* =========================
+   CORS
+========================= */
+
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:5173',
@@ -71,8 +86,8 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin
-      // such as mobile apps, curl, Postman, etc.
+      // Allow requests without an Origin header
+      // such as Postman, curl, server-to-server requests, etc.
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -85,25 +100,51 @@ app.use(
         )
       );
     },
+
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'DELETE',
+      'OPTIONS',
+    ],
+
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+    ],
   })
 );
 
-// 7. Request Body Parsers
-// Maximum request size: 1MB
-// NoSQL sanitization middleware
-app.use(express.json({ limit: '1mb' }));
+/* =========================
+   BODY PARSING
+========================= */
+
+app.use(
+  express.json({
+    limit: '1mb',
+  })
+);
+
 app.use(
   express.urlencoded({
     limit: '1mb',
     extended: true,
   })
 );
+
+/* =========================
+   SANITIZATION
+========================= */
+
 app.use(sanitizeMiddleware);
 
-// 8. HTTP Request Logger
+/* =========================
+   LOGGING
+========================= */
+
 if (process.env.NODE_ENV !== 'test') {
   app.use(
     morgan(
@@ -114,13 +155,18 @@ if (process.env.NODE_ENV !== 'test') {
   );
 }
 
-// 9. Global Rate Limiter
+/* =========================
+   RATE LIMITING
+========================= */
+
 if (process.env.NODE_ENV !== 'test') {
   const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
+
     standardHeaders: true,
     legacyHeaders: false,
+
     message: {
       success: false,
       error: {
@@ -134,15 +180,26 @@ if (process.env.NODE_ENV !== 'test') {
   app.use('/api', globalLimiter);
 }
 
-// 10. Mount API Routes
+/* =========================
+   API ROUTES
+========================= */
+
 app.use('/api/health', healthRoutes);
+
 app.use('/api/auth', authRoutes);
+
 app.use('/api/goals', goalRoutes);
+
 app.use('/api/group-goals', groupGoalRoutes);
+
 app.use('/api/dashboard', dashboardRoutes);
+
 app.use('/api/notifications', notificationRoutes);
 
-// 11. Root Route
+/* =========================
+   ROOT ROUTE
+========================= */
+
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -152,7 +209,10 @@ app.get('/', (req, res) => {
   });
 });
 
-// 12. Handle Unmatched Routes (404)
+/* =========================
+   404 HANDLER
+========================= */
+
 app.all('*', (req, res, next) => {
   next(
     new AppError(
@@ -163,21 +223,30 @@ app.all('*', (req, res, next) => {
   );
 });
 
-// 13. Centralized Global Error Handler
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
+
 app.use(errorHandler);
 
-// 14. Start HTTP Server
-// Vercel manages the HTTP server in production.
-// app.listen() is only used for local development.
+/* =========================
+   LOCAL SERVER
+========================= */
+
 let server = null;
 
+/**
+ * Vercel handles the HTTP server in production.
+ *
+ * Locally, start Express normally with app.listen().
+ */
 if (
   process.env.NODE_ENV !== 'production' &&
   process.env.NODE_ENV !== 'test'
 ) {
   server = app.listen(PORT, () => {
     console.log(
-      `[Server] SaveBuddy Backend running on port ${PORT} in ${
+      `[Server] SaveBuddy Backend running on port ${
         process.env.NODE_ENV || 'development'
       } mode.`
     );
@@ -188,7 +257,9 @@ if (
   });
 }
 
-// 15. Graceful Shutdown & Process Monitoring
+/* =========================
+   PROCESS ERROR HANDLING
+========================= */
 
 process.on('unhandledRejection', (err) => {
   console.error(
@@ -220,10 +291,12 @@ process.on('SIGTERM', () => {
       console.log(
         '[Process] Server terminated gracefully.'
       );
-    });
+  });
   }
 });
 
-// 16. Export Express App
-// Required by Vercel
+/* =========================
+   EXPORT APP
+========================= */
+
 module.exports = app;
