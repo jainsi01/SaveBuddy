@@ -75,48 +75,74 @@ app.use(
 ========================= */
 
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  'https://save-buddy-shm3.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
-].filter(Boolean);
+];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests without an Origin header
-      // such as Postman, curl, server-to-server requests, etc.
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
+if (process.env.CLIENT_URL) {
+  process.env.CLIENT_URL.split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+    .forEach((origin) => {
+      if (!allowedOrigins.includes(origin)) {
+        allowedOrigins.push(origin);
       }
+    });
+}
 
-      return callback(
-        new AppError(
-          `Origin ${origin} not allowed by CORS policy.`,
-          403,
-          'CORS_ERROR'
-        )
-      );
-    },
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests without an Origin header
+    // such as Postman, curl, server-to-server requests, mobile apps, etc.
+    if (!origin) {
+      return callback(null, true);
+    }
 
-    credentials: true,
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (
+      allowedOrigins.includes(origin) ||
+      allowedOrigins.includes(normalizedOrigin)
+    ) {
+      return callback(null, true);
+    }
 
-    methods: [
-      'GET',
-      'POST',
-      'PUT',
-      'DELETE',
-      'OPTIONS',
-    ],
+    return callback(
+      new AppError(
+        `Origin ${origin} not allowed by CORS policy.`,
+        403,
+        'CORS_ERROR'
+      )
+    );
+  },
 
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-    ],
-  })
-);
+  credentials: true,
+
+  methods: [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+  ],
+
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+  ],
+
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 /* =========================
    BODY PARSING

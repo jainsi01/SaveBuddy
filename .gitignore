@@ -68,3 +68,7 @@ build/
 *.sw?
 .DS_Store
 Thumbs.db
+
+backend.zip
+docs.zip
+frontend.zip
